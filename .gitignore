@@ -1,0 +1,17 @@
+# Environment and secrets
+.env
+*.log
+
+# MariaDB and Redis data directories
+data/mariadb/
+data/redis/
+
+# Frappe site generated assets and private uploads
+data/sites/*/private/
+data/sites/*/public/files/
+data/sites/common_site_config.json
+data/logs/
+
+# Python cache
+__pycache__/
+*.pyc

@@ -1,0 +1,21 @@
+http:
+  routers:
+    crm-minimines-http:
+      rule: "Host(`crm.m-mines.in`)"
+      entryPoints:
+        - http
+      middlewares:
+        - redirect-to-https
+      service: crm-minimines-service
+    crm-minimines-https:
+      rule: "Host(`crm.m-mines.in`)"
+      entryPoints:
+        - https
+      service: crm-minimines-service
+      tls:
+        certResolver: letsencrypt
+  services:
+    crm-minimines-service:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.12.4:8000"

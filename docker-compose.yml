@@ -1,0 +1,74 @@
+services:
+  crm-db:
+    image: mariadb:10.6
+    container_name: minimines-crm-db
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --innodb-buffer-pool-size=256M
+      - --innodb-log-file-size=64M
+      - --max-connections=100
+    environment:
+      MYSQL_ROOT_PASSWORD: mm_crm_root_db_sec2026
+      MYSQL_DATABASE: crm_minimines
+      MYSQL_USER: crm_user
+      MYSQL_PASSWORD: mm_crm_user_sec2026
+    volumes:
+      - ./data/mariadb:/var/lib/mysql
+    networks:
+      - crm-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 800M
+
+  crm-redis:
+    image: redis:7-alpine
+    container_name: minimines-crm-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 150mb --maxmemory-policy allkeys-lru
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - crm-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+
+  crm-app:
+    image: minimines-crm-app:latest
+    container_name: minimines-crm-backend
+    restart: unless-stopped
+    entrypoint: ["/entrypoint.sh"]
+    depends_on:
+      - crm-db
+      - crm-redis
+    volumes:
+      - ./data/sites:/home/frappe/frappe-bench/sites
+      - ./data/logs:/home/frappe/frappe-bench/logs
+      - ./entrypoint.sh:/entrypoint.sh
+    networks:
+      - coolify
+      - crm-internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minimines-crm.rule=Host(`crm.minimines.com`)"
+      - "traefik.http.routers.minimines-crm.entrypoints=websecure"
+      - "traefik.http.routers.minimines-crm.tls.certresolver=letsencrypt"
+      - "traefik.http.services.minimines-crm.loadbalancer.server.port=8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1200M
+
+networks:
+  crm-internal:
+    driver: bridge
+  coolify:
+    external: true
